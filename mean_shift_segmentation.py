@@ -17,7 +17,7 @@ np.random.seed(42)
 random.seed(42)
 
 def main():
-    im_rgb = data.astronaut()
+    im_rgb = data.coffee()
     im_rgb = misc.imresize(im_rgb, (256, 256)) / 255.0
     im = color.rgb2hsv(im_rgb)
     height, width, channels = im.shape
@@ -28,12 +28,13 @@ def main():
     for y in range(height):
         for x in range(width):
             pixel = im[y, x, ...]
-            pixels.append([pixel[0], pixel[1], pixel[2], y/height, x/width])
+            pixels.append([pixel[0], pixel[1], pixel[2], (y/height)*2.0, (x/width)*2.0])
+            #pixels.append([pixel[0], (y/height)*2, (x/width)*2])
     pixels = np.array(pixels)
     print("Found %d pixels to cluster" % (len(pixels)))
 
     print("Clustering...")
-    bandwidth = estimate_bandwidth(pixels, quantile=0.025, n_samples=500)
+    bandwidth = estimate_bandwidth(pixels, quantile=0.05, n_samples=500)
     clusterer = MeanShift(bandwidth=bandwidth, bin_seeding=True)
     labels = clusterer.fit_predict(pixels)
     labels_unique = set(labels)
@@ -45,14 +46,16 @@ def main():
     print(labels.shape)
 
     print("Creating images of segments...")
-    im_segments = [np.zeros((height, width)) for label in labels_unique]
+    #im_segments = [np.zeros((height, width)) for label in labels_unique]
+    im_segments = [np.copy(im_rgb)*0.25 for label in labels_unique]
 
     for y in range(height):
         for x in range(width):
             pixel_idx = (y*width) + x
             #print(pixel_idx, height, width)
             label = labels[pixel_idx]
-            im_segments[label][y, x] = 255
+            #im_segments[label][y, x] = 255
+            im_segments[label][y, x, 0] = 1.0
 
     print("Plotting...")
     images = [im_rgb]
