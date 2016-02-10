@@ -29,7 +29,6 @@ def main():
         for x in range(width):
             pixel = im[y, x, ...]
             pixels.append([pixel[0], pixel[1], pixel[2], (y/height)*2.0, (x/width)*2.0])
-            #pixels.append([pixel[0], (y/height)*2, (x/width)*2])
     pixels = np.array(pixels)
     print("Found %d pixels to cluster" % (len(pixels)))
 
@@ -46,15 +45,12 @@ def main():
     print(labels.shape)
 
     print("Creating images of segments...")
-    #im_segments = [np.zeros((height, width)) for label in labels_unique]
     im_segments = [np.copy(im_rgb)*0.25 for label in labels_unique]
 
     for y in range(height):
         for x in range(width):
             pixel_idx = (y*width) + x
-            #print(pixel_idx, height, width)
             label = labels[pixel_idx]
-            #im_segments[label][y, x] = 255
             im_segments[label][y, x, 0] = 1.0
 
     print("Plotting...")
