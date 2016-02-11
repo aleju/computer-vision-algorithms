@@ -1,129 +1,86 @@
+"""Calculate the harris corner score of an image."""
 from __future__ import division, print_function
 from scipy import signal, ndimage
-from scipy.ndimage import filters as filters
 import numpy as np
 import random
 from skimage import data
 from skimage import feature
-from skimage import util
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+from skimage import util as skiutil
+import util
 np.random.seed(42)
 random.seed(42)
 
 def main():
-    im = data.checkerboard()
-    score_window = harris_window(im, 7)
-    score_gauss = harris_gauss(im)
-    plot_images([im, score_window, score_gauss, feature.corner_harris(im)], ["Image", "Harris-Score (window)", "Harris-Score (gauss)", "Harris-Score (ground truth)"])
+    """Load image, calculate harris scores (window functions: matrix of ones, gauss)
+    and plot the results."""
+    img = data.checkerboard()
+    score_window = harris_ones(img, 7)
+    score_gauss = harris_gauss(img)
+    util.plot_images_grayscale(
+        [img, score_window, score_gauss, feature.corner_harris(img)],
+        ["Image", "Harris-Score (ones)", "Harris-Score (gauss)", "Harris-Score (ground truth)"]
+    )
 
-def harris_gauss(im, sigma=1, k=0.05):
-    im = util.img_as_float(im)
-    imy, imx = np.gradient(im)
+def harris_gauss(img, sigma=1, k=0.05):
+    """Calculate the harris score based on a gauss window function.
+    Args:
+        img The image to use for corner detection.
+        sigma The sigma value for the gauss functions.
+        k Weighting parameter during the final scoring (det vs. trace).
+    Returns:
+        Corner score image"""
+    # Gradients
+    img = skiutil.img_as_float(img)
+    imgy, imgx = np.gradient(img)
 
-    imxy = imx * imy
-    imxx = imx ** 2
-    imyy = imy ** 2
+    imgxy = imgx * imgy
+    imgxx = imgx ** 2
+    imgyy = imgy ** 2
 
     # compute parts of harris matrix
-    A11 = ndimage.gaussian_filter(imxx, sigma=1, mode="constant")
-    A12 = ndimage.gaussian_filter(imxy, sigma=1, mode="constant")
-    A21 = A12
-    A22 = ndimage.gaussian_filter(imyy, sigma=1, mode="constant")
+    a11 = ndimage.gaussian_filter(imgxx, sigma=sigma, mode="constant")
+    a12 = ndimage.gaussian_filter(imgxy, sigma=sigma, mode="constant")
+    a21 = a12
+    a22 = ndimage.gaussian_filter(imgyy, sigma=sigma, mode="constant")
 
     # compute score per pixel
-    detA = A11 * A22 - A12 * A21
-    traceA = A11 + A22
-    score = detA - k * traceA ** 2
-    #score = 2*detA / (traceA + 1e-6)
+    det_a = a11 * a22 - a12 * a21
+    trace_a = a11 + a22
+    score = det_a - k * trace_a ** 2
 
     return score
 
-def harris_window(im, windowSize, k=0.05):
-    #gauss = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]])
-    #I = signal.correlate(I, gauss, mode="same") / np.sum(gauss)
-    #print(I)
-    #I = ndimage.gaussian_filter(I, sigma=sigma)
+def harris_ones(img, window_size, k=0.05):
+    """Calculate the harris score based on a window function of diagonal ones.
+    Args:
+        img The image to use for corner detection.
+        window_size Size of the window (NxN).
+        k Weighting parameter during the final scoring (det vs. trace).
+    Returns:
+        Corner score image
+    """
+    # Gradients
+    img = skiutil.img_as_float(img)
+    imgy, imgx = np.gradient(img)
 
-    #Ix = dx(I)
-    #Iy = dy(I)
+    imgxy = imgx * imgy
+    imgxx = imgx ** 2
+    imgyy = imgy ** 2
 
-    im = util.img_as_float(im)
-    imy, imx = np.gradient(im)
-    #skIx, skIy = _compute_derivatives(I)
-    #Iy = util.img_as_float(skIy)
-    #Ix = util.img_as_float(skIx)
-
-    imxy = imx * imy
-    imxx = imx ** 2
-    imyy = imy ** 2
-
-    window = np.ones((windowSize, windowSize))
+    # window function (matrix of diagonal ones)
+    window = np.ones((window_size, window_size))
 
     # compute parts of harris matrix
-    A11 = signal.correlate(imxx, window, mode="same") / windowSize
-    A12 = signal.correlate(imxy, window, mode="same") / windowSize
-    A21 = A12
-    A22 = signal.correlate(imyy, window, mode="same") / windowSize
-
-    #A11 = ndimage.gaussian_filter(Ixx, sigma=1, mode="constant")
-    #A12 = ndimage.gaussian_filter(Ixy, sigma=1, mode="constant")
-    #A21 = A12
-    #A22 = ndimage.gaussian_filter(Iyy, sigma=1, mode="constant")
-    #print("A11:", A11)
-
-    #A11, A12, A22 = feature.structure_tensor(I, sigma)
-    #A21 = A12
+    a11 = signal.correlate(imgxx, window, mode="same") / window_size
+    a12 = signal.correlate(imgxy, window, mode="same") / window_size
+    a21 = a12
+    a22 = signal.correlate(imgyy, window, mode="same") / window_size
 
     # compute score per pixel
-    detA = A11 * A22 - A12 * A21
-    traceA = A11 + A22
-    #score = np.divide(detA, traceA) # if element in traceA is zero, numpy returns 0
-    #score[np.isnan(score)] = 0
-    score = detA - k * traceA ** 2
-    #score = 2*detA / (traceA + 1e-6)
+    det_a = a11 * a22 - a12 * a21
+    trace_a = a11 + a22
 
-    #score = (score / np.max(score)) * 255.0
-    #print("score:", score)
-
-
-    #plot_images([I, Ix, Iy, score, feature.corner_harris(I)], ["I", "Ix", "Iy", "Harris-Score", "Harris-Score Ground Truth"])
-    #plot_images([I, Ix, Iy, score, feature.corner_harris(I)])
-    #plot_images([score])
-    return score
-
-"""
-def _compute_derivatives(image, mode='constant', cval=0):
-    imy = ndimage.sobel(image, axis=0, mode=mode, cval=cval)
-    imx = ndimage.sobel(image, axis=1, mode=mode, cval=cval)
-
-    return imx, imy
-
-def dx(I):
-    #return signal.correlate(I, np.array([-1, 1]), mode="same") / 2
-
-    #return filters.correlate1d(I, np.array([-1, 1]), axis=1)
-    Ix = np.copy(I)
-    Ix[:, 1:-1] = Ix[:, 2:] - Ix[:, :-2]
-    Ix[:, -1] = Ix[:, -1] - Ix[:, -2]
-    return Ix
-
-def dy(I):
-    #from scipy.ndimage import filters as filters
-    #return filters.correlate1d(I, np.array([-1, 1]), axis=0)
-    Itmp = dx(np.rot90(I))
-    return np.rot90(Itmp, 3)
-"""
-
-def plot_images(images, titles):
-    fig = plt.figure()
-    for i, (image, title) in enumerate(zip(images, titles)):
-        ax = fig.add_subplot(1,len(images),i+1)
-        ax.set_title(title)
-        #ax.get_xaxis().set_visible(False)
-        #ax.get_yaxis().set_visible(False)
-        plt.imshow(image, cmap=cm.Greys_r)
-    plt.show()
+    return det_a - k * trace_a ** 2
 
 if __name__ == "__main__":
     main()

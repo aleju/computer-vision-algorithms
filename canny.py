@@ -1,42 +1,52 @@
+"""Apply Canny Edge Detector to an image."""
 from __future__ import division, print_function
-from scipy import signal, ndimage
+from scipy import signal
 from scipy.ndimage import filters as filters
 import numpy as np
 import random
 from skimage import data
-from skimage import filters as skifilters
 from skimage import util as skiutil
 from skimage import feature
 import util
-import bisect
 np.random.seed(42)
 random.seed(42)
 
 def main():
-    im = skiutil.img_as_float(data.camera())
-    im = filters.gaussian_filter(im, sigma=1.5)
+    """Load image, apply Canny, plot."""
+    img = skiutil.img_as_float(data.camera())
+    img = filters.gaussian_filter(img, sigma=1.0)
 
     sobel_y = np.array([
         [-1, -2, -1],
-        [ 0,  0,  0],
-        [ 1,  2,  1]
+        [0, 0, 0],
+        [1, 2, 1]
     ])
     sobel_x = np.rot90(sobel_y) # rotates counter-clockwise
 
-    im_sx = signal.correlate(im, sobel_x, mode="same")
-    im_sy = signal.correlate(im, sobel_y, mode="same")
+    img_sx = signal.correlate(img, sobel_x, mode="same")
+    img_sy = signal.correlate(img, sobel_y, mode="same")
 
-    g_magnitudes = np.sqrt(im_sx**2 + im_sy**2) / np.sqrt(2)
-    g_orientations = np.arctan2(im_sy, im_sx)
+    g_magnitudes = np.sqrt(img_sx**2 + img_sy**2) / np.sqrt(2)
+    g_orientations = np.arctan2(img_sy, img_sx)
 
     g_mag_nonmax = non_maximum_suppression(g_magnitudes, g_orientations)
-    canny = hysteresis(g_mag_nonmax, 0.1, 0.001)
+    canny = hysteresis(g_mag_nonmax, 0.35, 0.05)
 
-    gt = feature.canny(data.camera())
+    ground_truth = feature.canny(data.camera())
 
-    util.plot_images_grayscale([im, g_magnitudes, g_mag_nonmax, canny, gt], ["Image", "After Sobel", "After nonmax", "Canny", "Canny (Ground Truth)"])
+    util.plot_images_grayscale(
+        [img, g_magnitudes, g_mag_nonmax, canny, ground_truth],
+        ["Image", "After Sobel", "After nonmax", "Canny", "Canny (Ground Truth)"]
+    )
 
 def non_maximum_suppression(g_magnitudes, g_orientations):
+    """Apply Non Maximum Suppression to the gradient of an image.
+    Args:
+        g_magnitudes    Magnitude of the gradient of an image (in 2D).
+        g_orientations  Orientations of the gradient of an image (in 2D).
+    Returns:
+        Modified gradient magnitudes
+    """
     gm, go = g_magnitudes, g_orientations
     gm_out = np.copy(gm)
     height, width = gm.shape
@@ -44,7 +54,7 @@ def non_maximum_suppression(g_magnitudes, g_orientations):
         for x in range(width):
             theta = np.degrees(go[y, x])
             theta = 180 + theta if theta < 0 else theta
-            theta = bisect.bisect([0, 45, 90, 135, 180], theta)
+            theta = util.quantize(theta, [0, 45, 90, 135, 180])
 
             north = gm[y-1, x] if y > 0 else 0
             south = gm[y+1, x] if y < height-1 else 0
@@ -67,6 +77,14 @@ def non_maximum_suppression(g_magnitudes, g_orientations):
     return gm_out
 
 def hysteresis(g_magnitudes, threshold_high, threshold_low):
+    """Applies histeresis thresholding to the gradient of an image.
+    Args:
+        g_magnitudes    Magnitude of the gradient of an image (in 2D).
+        threshold_high  Upper/strong threshold.
+        threshold_low   Lower/weak threshold.
+    Returns:
+        Modified gradient magnitude.
+    """
     gm_strong = np.zeros(g_magnitudes.shape)
     gm_weak = np.zeros(g_magnitudes.shape)
     gm_strong[g_magnitudes >= threshold_high] = 1

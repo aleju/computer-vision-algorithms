@@ -1,70 +1,104 @@
+"""Compute derivatives of an image with respect to x and y."""
 from __future__ import division, print_function
-from scipy import signal, ndimage
+from scipy import ndimage
 import numpy as np
 import random
 from skimage import data
-from skimage import util as skiutil
 import util
 np.random.seed(42)
 random.seed(42)
 
 def main():
-    im = data.camera()
-    imy_np, imx_np = np.gradient(im)
-    imx_ski, imy_ski = _compute_derivatives(im)
+    """Load image, compute derivatives, plot."""
+    img = data.camera()
+    imgy_np, imgx_np = np.gradient(img)
+    imgx_ski, imgy_ski = _compute_derivatives(img)
 
     # dx
     util.plot_images_grayscale(
-        [im, dx_symmetric(im), dx_forward(im), dx_backward(im), imx_np, imx_ski],
-        ["Image", "dx (symmetric)", "dx (forward)", "dx (backward)", "Ground Truth (numpy)", "Ground Truth (scikit-image)"]
+        [img, dx_symmetric(img), dx_forward(img), dx_backward(img), imgx_np, imgx_ski],
+        ["Image", "dx (symmetric)", "dx (forward)", "dx (backward)",
+         "Ground Truth (numpy)", "Ground Truth (scikit-image)"]
     )
 
     # dy
     util.plot_images_grayscale(
-        [im, dy_symmetric(im), dy_forward(im), dy_backward(im), imy_np, imy_ski],
-        ["Image", "dy (symmetric)", "dy (forward)", "dy (backward)", "Ground Truth (numpy)", "Ground Truth (scikit-image)"]
+        [img, dy_symmetric(img), dy_forward(img), dy_backward(img), imgy_np, imgy_ski],
+        ["Image", "dy (symmetric)", "dy (forward)", "dy (backward)",
+         "Ground Truth (numpy)", "Ground Truth (scikit-image)"]
     )
 
-# df_dx = f(y,x+1) - f(y,x-1)
-def dx_symmetric(im):
-    #return signal.correlate(I, np.array([-1, 1]), mode="same") / 2
+def dx_symmetric(img):
+    """Calculate the derivative with respect to x of an image.
+    Symmetric formula: df_dx = f(y,x+1) - f(y,x-1)
+    Args:
+        img The image
+    Returns:
+        x-derivate of the image as a new image"""
+    imgx = np.copy(img)
+    imgx[:, 1:-1] = imgx[:, 2:] - imgx[:, :-2]
+    imgx[:, 0] = 0
+    imgx[:, -1] = 0
+    return imgx
 
-    #return filters.correlate1d(I, np.array([-1, 1]), axis=1)
-    imx = np.copy(im)
-    imx[:, 1:-1] = imx[:, 2:] - imx[:, :-2]
-    imx[:, 0] = 0
-    imx[:, -1] = 0
-    return imx
+def dx_forward(img):
+    """Calculate the derivative with respect to x of an image.
+    Forward formula: df_dx = f(y,x+1) - f(y,x)
+    Args:
+        img The image
+    Returns:
+        x-derivate of the image as a new image"""
+    imgx = np.copy(img)
+    imgx[:, :-1] = imgx[:, 1:] - imgx[:, :-1]
+    imgx[:, -1] = 0
+    return imgx
 
-# df_dx = f(y,x+1) - f(y,x)
-def dx_forward(im):
-    imx = np.copy(im)
-    imx[:, :-1] = imx[:, 1:] - imx[:, :-1]
-    imx[:, -1] = 0
-    return imx
+def dx_backward(img):
+    """Calculate the derivative with respect to x of an image.
+    Backward formula: df_dx = f(y,x) - f(y,x-1)
+    Args:
+        img The image
+    Returns:
+        x-derivate of the image as a new image"""
+    imgx = np.copy(img)
+    imgx[:, 1:] = imgx[:, 1:] - imgx[:, :-1]
+    imgx[:, 0] = 0
+    return imgx
 
-# df_dx = f(y,x) - f(y,x-1)
-def dx_backward(im):
-    imx = np.copy(im)
-    imx[:, 1:] = imx[:, 1:] - imx[:, :-1]
-    imx[:, 0] = 0
-    return imx
+def dy_symmetric(img):
+    """Calculate the derivative with respect to y of an image.
+    Symmetric formula: df_dy = f(y+1,x) - f(y-1,x)
+    Args:
+        img The image
+    Returns:
+        y-derivate of the image as a new image"""
+    return np.rot90(dx_symmetric(np.rot90(img)), 3)
 
-def dy_symmetric(im):
-    return np.rot90(dx_symmetric(np.rot90(im)), 3)
+def dy_forward(img):
+    """Calculate the derivative with respect to y of an image.
+    Symmetric formula: df_dy = f(y+1,x) - f(y,x)
+    Args:
+        img The image
+    Returns:
+        y-derivate of the image as a new image"""
+    return np.rot90(dx_forward(np.rot90(img)), 3)
 
-def dy_forward(im):
-    return np.rot90(dx_forward(np.rot90(im)), 3)
+def dy_backward(img):
+    """Calculate the derivative with respect to y of an image.
+    Backward formula: df_dy = f(y,x) - f(y-1,x)
+    Args:
+        img The image
+    Returns:
+        y-derivate of the image as a new image"""
+    return np.rot90(dx_backward(np.rot90(img)), 3)
 
-def dy_backward(im):
-    return np.rot90(dx_backward(np.rot90(im)), 3)
-
-# from skimage
 def _compute_derivatives(image, mode='constant', cval=0):
-    imy = ndimage.sobel(image, axis=0, mode=mode, cval=cval)
-    imx = ndimage.sobel(image, axis=1, mode=mode, cval=cval)
+    """Compute derivatives the way that scikit-image does it (for comparison).
+    This method is fully copied from the repository."""
+    imgy = ndimage.sobel(image, axis=0, mode=mode, cval=cval)
+    imgx = ndimage.sobel(image, axis=1, mode=mode, cval=cval)
 
-    return imx, imy
+    return imgx, imgy
 
 if __name__ == "__main__":
     main()
