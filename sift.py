@@ -171,15 +171,5 @@ def plot_images(images, titles, no_axis=False):
         plt.imshow(image)
     plt.show()
 
-def quantize(val, to_values):
-    best_match = None
-    best_match_diff = None
-    for other_val in to_values:
-        diff = abs(other_val - val)
-        if best_match is None or diff < best_match_diff:
-            best_match = other_val
-            best_match_diff = diff
-    return best_match
-
 if __name__ == "__main__":
     main()

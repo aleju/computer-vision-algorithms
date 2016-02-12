@@ -1,39 +1,47 @@
+"""Apply Sobel filter to an image."""
 from __future__ import division, print_function
-from scipy import signal, ndimage
-from scipy.ndimage import filters as filters
+from scipy import signal
 import numpy as np
 import random
 from skimage import data
 from skimage import filters as skifilters
-from skimage import util as skiutil
 import util
 np.random.seed(42)
 random.seed(42)
 
 def main():
-    im = data.camera()
+    """Load image, apply sobel (to get x/y gradients), plot the results."""
+    img = data.camera()
 
     sobel_y = np.array([
         [-1, -2, -1],
-        [ 0,  0,  0],
-        [ 1,  2,  1]
+        [0, 0, 0],
+        [1, 2, 1]
     ])
     sobel_x = np.rot90(sobel_y) # rotates counter-clockwise
 
-    im_sx = signal.correlate(im, sobel_x, mode="same")
-    im_sy = signal.correlate(im, sobel_y, mode="same")
+    # apply x/y sobel filter to get x/y gradients
+    img_sx = signal.correlate(img, sobel_x, mode="same")
+    img_sy = signal.correlate(img, sobel_y, mode="same")
 
-    # combine via gradient magnitude
+    # combine x/y gradients to gradient magnitude
     # scikit-image's implementation divides by sqrt(2), not sure why
-    im_s = np.sqrt(im_sx**2 + im_sy**2) / np.sqrt(2)
+    img_s = np.sqrt(img_sx**2 + img_sy**2) / np.sqrt(2)
 
-    threshold = np.average(im_s)
-    im_s_bin = np.zeros(im_s.shape)
-    im_s_bin[im_s > threshold] = 1
+    # create binarized image
+    threshold = np.average(img_s)
+    img_s_bin = np.zeros(img_s.shape)
+    img_s_bin[img_s > threshold] = 1
 
-    gt = skifilters.sobel(data.camera())
+    # generate ground truth (scikit-image method)
+    ground_truth = skifilters.sobel(data.camera())
 
-    util.plot_images_grayscale([im, im_sx, im_sy, im_s, im_s_bin, gt], ["Image", "Sobel (x)", "Sobel (y)", "Sobel (both)", "Sobel (both, binarized)", "Sobel (Ground Truth)"])
+    # plot
+    util.plot_images_grayscale(
+        [img, img_sx, img_sy, img_s, img_s_bin, ground_truth],
+        ["Image", "Sobel (x)", "Sobel (y)", "Sobel (magnitude)",
+         "Sobel (magnitude, binarized)", "Sobel (Ground Truth)"]
+    )
 
 if __name__ == "__main__":
     main()
