@@ -1,11 +1,13 @@
 # About
 
-Custom implementations of common computer vision algorithms.
+Custom implementations of common machine learning algorithms.
 Purely for training purposes and not intended for productive use.
 
 # Files
 
 All files can simply be executed with `python filename.py` (i.e. no command line arguments).
+
+**Computer Vision**
 
 * **binary_dilation_erosion.py** - Dilation, Erosion, Opening and Closing for binary images.
 * **canny.py** - Canny edge detector.
@@ -24,6 +26,10 @@ All files can simply be executed with `python filename.py` (i.e. no command line
 * **sift.py** - Simplified implementation of the SIFT keypoint locator. Does not contain the descriptor nor sophisticated keypoint filtering (using hessian und principal curvatures). Also does not resize scales with higher sigmas.
 * **sobel.py** - Apply a Sobel filter to an image for smoothed gradient calculation.
 * **template_matching.py** - Find an example template image in a larger image.
+
+**Classifiers**
+
+* **gaussian_mixture_1d_em.py** - Train a mixture model of 1d gaussians using the EM algorithm.
 
 # Requirements
 
