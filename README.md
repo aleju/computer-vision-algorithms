@@ -33,4 +33,4 @@ All files can simply be executed with `python filename.py` (i.e. no command line
 
 # Requirements
 
-Python 2.7, scipy, numpy, sklearn, scikit-image
+Python 2.7, scipy, numpy, sklearn, scikit-image, matplotlib
