@@ -25,7 +25,9 @@ def quantize(val, to_values):
 
     Args:
         val    The value to quantize.
-        to_values The list of allowed values."""
+        to_values The list of allowed values.
+    Returns:
+        integer or float (depending on to_values)"""
     best_match = None
     best_match_diff = None
     for other_val in to_values:
@@ -34,3 +36,26 @@ def quantize(val, to_values):
             best_match = other_val
             best_match_diff = diff
     return best_match
+
+def quantize_idx(val, to_values):
+    """Quantizes a value to a set of allowed values and returns the index of
+    the quantized value.
+    Compares to each value among the allowed values and thus is rather slow.
+    Example:
+        quantize(4.6, [3.5, 4, 4.5, 5, 5.5, 6]) -> 2 (because quantized to 4.5)
+
+    Args:
+        val    The value to quantize.
+        to_values The list of allowed values.
+    Returns:
+        integer"""
+    best_match_idx = None
+    best_match = None
+    best_match_diff = None
+    for i, other_val in enumerate(to_values):
+        diff = abs(other_val - val)
+        if best_match is None or diff < best_match_diff:
+            best_match_idx = i
+            best_match = other_val
+            best_match_diff = diff
+    return best_match_idx
