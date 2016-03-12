@@ -33,6 +33,11 @@ def main():
     )
 
 def grad_magnitude(img):
+    """Calculate the gradient magnitude of an image.
+    Args:
+        img The image
+    Returns:
+        gradient image"""
     img = img / 255.0
     sobel_y = np.array([
         [-1, -2, -1],
@@ -49,6 +54,14 @@ def grad_magnitude(img):
     return imgmag
 
 def hough(img, nb_lines):
+    """Applies the Hough Transformation to an image.
+    Args:
+        img The image
+        nb_lines The number of lines to search for.
+    Returns:
+        Accumulator image,
+        Local maxima in accumulator image,
+        image with detected lines"""
     height, width = img.shape
     magnitude = grad_magnitude(img)
     mag_avg = np.average(magnitude)
@@ -93,6 +106,12 @@ def hough(img, nb_lines):
     return accumulator, local_maxima, img_hough
 
 def find_local_maxima(arr, size=5):
+    """Finds the local maxima in an image.
+    Args:
+        arr The image
+        size Neighborhood size (3 => 3x3)
+    Returns:
+        Local maxima image"""
     ssize = int((size-1)/2)
     arr = np.copy(arr)
     peaks = np.zeros(arr.shape)
@@ -108,6 +127,12 @@ def find_local_maxima(arr, size=5):
     return peaks
 
 def get_peak_indices(arr, n):
+    """Finds the indices of the n highest values in an array.
+    Args:
+        arr Array to analyze.
+        n Number of values.
+    Returns:
+        List of (value, (dim1 idx, dim2 idx, ...))"""
     indices = arr.ravel().argsort()[-n:]
     indices = (np.unravel_index(i, arr.shape) for i in indices)
     return [(arr[i], i) for i in indices]
